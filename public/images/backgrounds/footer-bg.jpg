@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#87CEEB" />
+      <stop offset="100%" stop-color="#E0F6FF" />
+    </linearGradient>
+    <linearGradient id="mountainGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4A5568" />
+      <stop offset="100%" stop-color="#2D3748" />
+    </linearGradient>
+    <linearGradient id="roadGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4A5568" />
+      <stop offset="100%" stop-color="#2D3748" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky background -->
+  <rect width="800" height="300" fill="url(#skyGradient)" />
+  
+  <!-- Mountains -->
+  <polygon points="0,250 150,150 300,200 450,120 600,180 750,140 800,160 800,300 0,300" fill="url(#mountainGradient)" />
+  
+  <!-- Ground -->
+  <rect y="300" width="800" height="100" fill="#8B7355" />
+  
+  <!-- Road -->
+  <polygon points="200,400 250,300 550,300 600,400" fill="url(#roadGradient)" />
+  
+  <!-- Road lines -->
+  <rect x="390" y="320" width="20" height="8" fill="white" />
+  <rect x="390" y="340" width="20" height="8" fill="white" />
+  <rect x="390" y="360" width="20" height="8" fill="white" />
+  <rect x="390" y="380" width="20" height="8" fill="white" />
+  
+  <!-- Sun -->
+  <circle cx="650" cy="80" r="40" fill="#F97316" opacity="0.8" />
+  
+  <!-- Clouds -->
+  <ellipse cx="150" cy="60" rx="30" ry="15" fill="white" opacity="0.7" />
+  <ellipse cx="170" cy="55" rx="25" ry="12" fill="white" opacity="0.7" />
+  <ellipse cx="500" cy="90" rx="35" ry="18" fill="white" opacity="0.6" />
+  <ellipse cx="520" cy="85" rx="28" ry="14" fill="white" opacity="0.6" />
+  
+  <!-- Travel elements -->
+  <text x="400" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#1E3A8A">Adventure Awaits</text>
+</svg>

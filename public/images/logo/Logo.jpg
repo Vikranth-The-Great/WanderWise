@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1E3A8A" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="30" cy="30" r="25" fill="url(#logoGradient)" />
+  
+  <!-- Airplane icon -->
+  <path d="M20 30 L35 25 L40 30 L35 35 Z" fill="white" />
+  <path d="M35 30 L45 28 L47 30 L45 32 Z" fill="white" />
+  <circle cx="42" cy="30" r="2" fill="#F97316" />
+  
+  <!-- Company name -->
+  <text x="65" y="25" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#1E3A8A">Quick AI</text>
+  <text x="65" y="42" font-family="Arial, sans-serif" font-size="14" fill="#6B7280">Itinerary</text>
+</svg>

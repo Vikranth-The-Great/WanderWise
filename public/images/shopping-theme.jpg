@@ -1,0 +1,21 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="shoppingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D97706;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#shoppingGrad)"/>
+  <rect x="120" y="80" width="50" height="80" rx="5" fill="#FEF3C7" opacity="0.9"/>
+  <rect x="190" y="70" width="50" height="90" rx="5" fill="#FEF3C7" opacity="0.8"/>
+  <rect x="260" y="85" width="50" height="75" rx="5" fill="#FEF3C7" opacity="0.9"/>
+  <circle cx="145" cy="100" r="8" fill="#92400E" opacity="0.8"/>
+  <circle cx="215" cy="95" r="8" fill="#92400E" opacity="0.8"/>
+  <circle cx="285" cy="105" r="8" fill="#92400E" opacity="0.8"/>
+  <rect x="130" y="110" width="30" height="15" fill="#FBBF24" opacity="0.7"/>
+  <rect x="200" y="105" width="30" height="15" fill="#FBBF24" opacity="0.7"/>
+  <rect x="270" y="115" width="30" height="15" fill="#FBBF24" opacity="0.7"/>
+  <rect x="120" y="220" width="160" height="60" rx="10" fill="white" opacity="0.9"/>
+  <text x="200" y="240" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#92400E">Shopping & Culinary</text>
+  <text x="200" y="260" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#92400E">Food & Shopping</text>
+</svg>

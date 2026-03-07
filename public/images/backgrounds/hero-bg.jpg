@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <!-- Background with gradient -->
+  <defs>
+    <linearGradient id="sunset" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF7E5F" />
+      <stop offset="100%" stop-color="#FEB47B" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky background -->
+  <rect width="1920" height="1080" fill="url(#sunset)" />
+  
+  <!-- Sun -->
+  <circle cx="960" cy="300" r="100" fill="#FFEB3B" />
+  
+  <!-- Mountains in the background -->
+  <path d="M0,600 L300,400 L600,550 L900,350 L1200,500 L1500,300 L1800,450 L1920,400 L1920,1080 L0,1080 Z" fill="#3E2723" opacity="0.8" />
+  
+  <!-- Road -->
+  <path d="M860,1080 L960,400 L1060,1080 Z" fill="#424242" />
+  <path d="M960,1080 L960,400" stroke="#FFEB3B" stroke-width="5" stroke-dasharray="20,20" />
+  
+  <!-- Desert landscape -->
+  <path d="M0,700 L1920,700 L1920,1080 L0,1080 Z" fill="#D7CCC8" opacity="0.6" />
+</svg>
