@@ -9,9 +9,25 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === 'production'
   },
   images: {
-    formats: ['image/webp', 'image/avif']
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    formats: ['image/webp', 'image/avif'],
+    qualities: [75, 85],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.pexels.com',
+        pathname: '/**'
+      },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+        pathname: '/**'
+      }
+    ]
   },
-  swcMinify: true
+  outputFileTracingRoot: process.cwd()
 };
 
 export default nextConfig;

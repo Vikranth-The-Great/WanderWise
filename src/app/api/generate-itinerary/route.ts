@@ -27,6 +27,7 @@ export interface Activity {
   duration: string;
   cost: string;
   type: 'attraction' | 'meal' | 'transport' | 'accommodation';
+  image?: string;
   coordinates?: {
     lat: number;
     lng: number;

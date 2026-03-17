@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -43,6 +43,10 @@ interface ItineraryData {
     humorousTitle: string;
     summary: string;
     dayPlans: DayPlan[];
+}
+
+interface AttractionImageResponse {
+    images: Record<string, string>;
 }
 
 // Enhanced dummy data for demonstration
@@ -226,6 +230,63 @@ export default function ItineraryResultsPage() {
     // Attraction detail panel state
     const [showAttractionPanel, setShowAttractionPanel] = useState(false);
     const [selectedAttraction, setSelectedAttraction] = useState<Activity | null>(null);
+    const lastImageRequestKeyRef = useRef('');
+
+    const loadAttractionImages = useCallback(async (currentItinerary: ItineraryData) => {
+        const attractionTitles = Array.from(
+            new Set(
+                currentItinerary.dayPlans.flatMap((day) =>
+                    day.activities
+                        .filter((activity) => activity.type === 'attraction')
+                        .map((activity) => activity.title.trim())
+                        .filter(Boolean)
+                )
+            )
+        );
+
+        if (attractionTitles.length === 0) return;
+        const requestKey = `${currentItinerary.destination.toLowerCase()}::${[...attractionTitles].sort().join('|')}`;
+        if (lastImageRequestKeyRef.current === requestKey) return;
+        lastImageRequestKeyRef.current = requestKey;
+
+        try {
+            const response = await fetch('/api/attraction-images', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    destination: currentItinerary.destination,
+                    attractions: attractionTitles
+                })
+            });
+
+            if (!response.ok) {
+                console.warn('Failed to fetch attraction images for itinerary results.');
+                return;
+            }
+
+            const data: AttractionImageResponse = await response.json();
+            if (!data.images || Object.keys(data.images).length === 0) return;
+
+            setItinerary((previous) => {
+                const sourceItinerary = previous ?? currentItinerary;
+                return {
+                    ...sourceItinerary,
+                    dayPlans: sourceItinerary.dayPlans.map((day) => ({
+                        ...day,
+                        activities: day.activities.map((activity) => {
+                            if (activity.type !== 'attraction') return activity;
+                            const attractionImage = data.images[activity.title];
+                            if (!attractionImage) return activity;
+                            return { ...activity, image: attractionImage };
+                        })
+                    }))
+                };
+            });
+        } catch (error) {
+            lastImageRequestKeyRef.current = '';
+            console.warn('Error while fetching attraction images from Pexels.', error);
+        }
+    }, []);
 
     // Body scroll lock effect
     useEffect(() => {
@@ -340,7 +401,7 @@ export default function ItineraryResultsPage() {
                                     duration: activity.duration,
                                     cost: activity.cost,
                                     type: activity.type as 'attraction' | 'meal' | 'transport' | 'accommodation',
-                                    image: '/images/placeholder.svg'
+                                    image: activity.image || '/images/placeholder.svg'
                                 };
 
                                 // Preserve coordinates from API response if available
@@ -377,6 +438,7 @@ export default function ItineraryResultsPage() {
                     };
 
                     setItinerary(convertedItinerary);
+                    void loadAttractionImages(convertedItinerary);
                 } else {
                     // No generated itinerary found - redirect back to generate
                     console.error('🚨 No generated itinerary found in localStorage');
@@ -396,7 +458,7 @@ export default function ItineraryResultsPage() {
 
         // Add a small delay to ensure localStorage is ready
         setTimeout(checkDataAndLoad, 100);
-    }, [searchParams, router]);
+    }, [searchParams, router, loadAttractionImages]);
 
     const handleDownload = () => {
         const itineraryText = generateItineraryText();
@@ -592,7 +654,7 @@ export default function ItineraryResultsPage() {
                 <div className="text-center">
                     <div className="text-red-500 text-6xl mb-4">⚠️</div>
                     <h2 className="text-2xl font-bold text-gray-800 mb-2">Itinerary Not Found</h2>
-                    <p className="text-gray-600 mb-4">We couldn't load your itinerary. Please try generating a new one.</p>
+                    <p className="text-gray-600 mb-4">We couldn&apos;t load your itinerary. Please try generating a new one.</p>
                     <button
                         onClick={() => router.push('/traveler-type')}
                         className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -784,8 +846,8 @@ export default function ItineraryResultsPage() {
                                                                                     <span className="text-green-600 text-sm">🌱</span>
                                                                                 </div>
                                                                                 <p className="text-blue-600 text-sm font-semibold mb-1">
-                                                                                    ({(activity as any).mealType ?
-                                                                                        (activity as any).mealType.charAt(0).toUpperCase() + (activity as any).mealType.slice(1) :
+                                                                                    ({activity.mealType ?
+                                                                                        activity.mealType.charAt(0).toUpperCase() + activity.mealType.slice(1) :
                                                                                         'Meal'})
                                                                                 </p>
                                                                                 <div className="flex items-center gap-4 text-sm text-gray-600">
