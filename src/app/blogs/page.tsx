@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FiCalendar, FiClock, FiSearch } from 'react-icons/fi';
+import Image from 'next/image';
 import Link from 'next/link';
 
 /**
@@ -148,9 +149,11 @@ export default function Blogs() {
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
                 <div className="relative h-48 overflow-hidden">
-                  <img
+                  <Image
                     src={post.image}
                     alt={post.title}
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                     className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
                   />
                   <div className="absolute top-4 left-4">
@@ -201,7 +204,7 @@ export default function Blogs() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <h3 className="text-xl font-semibold text-primary mb-2">No Results Found</h3>
-              <p className="text-gray-600 mb-4">We couldn't find any blog posts matching your search criteria.</p>
+              <p className="text-gray-600 mb-4">We couldn&apos;t find any blog posts matching your search criteria.</p>
               <button
                 onClick={() => {
                   setSearchQuery('');

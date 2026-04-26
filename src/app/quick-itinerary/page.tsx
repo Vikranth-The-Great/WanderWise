@@ -7,19 +7,6 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { toast } from 'react-hot-toast';
 
-// Helper function to generate date range
-const generateDateRange = (start: Date, end: Date): Date[] => {
-  const dates: Date[] = [];
-  const currentDate = new Date(start);
-
-  while (currentDate <= end) {
-    dates.push(new Date(currentDate));
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-
-  return dates;
-};
-
 interface Destination {
   id: string;
   name: string;
@@ -62,35 +49,39 @@ export default function QuickItinerary() {
 
   // Calculate total days when dates change
   useEffect(() => {
-    if (startDate && endDate) {
-      const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      setTotalDays(days);
-
-      // Auto-split days between destinations
-      if (destinations.length > 0) {
-        const daysPerDestination = Math.floor(days / destinations.length);
-        const remainingDays = days % destinations.length;
-
-        const updatedDestinations = destinations.map((dest, index) => {
-          const destDays = daysPerDestination + (index < remainingDays ? 1 : 0);
-          const destStartDate = new Date(startDate);
-          const previousDays = destinations.slice(0, index).reduce((sum, d) => sum + d.days, 0);
-          destStartDate.setDate(startDate.getDate() + previousDays);
-
-          const destEndDate = new Date(destStartDate);
-          destEndDate.setDate(destStartDate.getDate() + destDays - 1);
-
-          return {
-            ...dest,
-            days: destDays,
-            startDate: destStartDate,
-            endDate: destEndDate
-          };
-        });
-
-        setDestinations(updatedDestinations);
-      }
+    if (!startDate || !endDate) {
+      return;
     }
+
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    setTotalDays(days);
+
+    setDestinations((currentDestinations) => {
+      if (currentDestinations.length === 0) {
+        return currentDestinations;
+      }
+
+      const daysPerDestination = Math.floor(days / currentDestinations.length);
+      const remainingDays = days % currentDestinations.length;
+      let runningOffset = 0;
+
+      return currentDestinations.map((destination, index) => {
+        const destinationDays = daysPerDestination + (index < remainingDays ? 1 : 0);
+        const destinationStartDate = new Date(startDate);
+        destinationStartDate.setDate(startDate.getDate() + runningOffset);
+
+        const destinationEndDate = new Date(destinationStartDate);
+        destinationEndDate.setDate(destinationStartDate.getDate() + destinationDays - 1);
+        runningOffset += destinationDays;
+
+        return {
+          ...destination,
+          days: destinationDays,
+          startDate: destinationStartDate,
+          endDate: destinationEndDate
+        };
+      });
+    });
   }, [startDate, endDate, destinations.length]);
 
   const addDestination = () => {
@@ -149,7 +140,7 @@ export default function QuickItinerary() {
     );
 
     // Recalculate dates for all destinations
-    let currentDate = new Date(startDate!);
+    const currentDate = new Date(startDate!);
     updatedDestinations.forEach(dest => {
       dest.startDate = new Date(currentDate);
       dest.endDate = new Date(currentDate);
@@ -263,7 +254,7 @@ export default function QuickItinerary() {
         >
           <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6">Quick AI Itinerary</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Tell us where and when you're traveling, and our AI will create a personalized itinerary for you in seconds.
+            Tell us where and when you&apos;re traveling, and our AI will create a personalized itinerary for you in seconds.
           </p>
         </motion.div>
 

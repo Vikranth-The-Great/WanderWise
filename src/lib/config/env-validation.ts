@@ -1,7 +1,5 @@
 // Environment variables validation utility
 
-import { validateGeoapifyApiKey } from '../api/geoapify';
-
 export interface ApiValidationResult {
   isValid: boolean;
   missingKeys: string[];
@@ -17,15 +15,14 @@ export function validateEnvironmentVariables(): ApiValidationResult {
   const missingKeys: string[] = [];
   const errors: string[] = [];
 
-  // Check OpenRouter DS_KEY (required for core functionality)
-  if (!process.env.DS_KEY || process.env.DS_KEY.trim() === '') {
-    missingKeys.push('DS_KEY');
-    errors.push('OpenRouter DS_KEY is missing or invalid');
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === '') {
+    missingKeys.push('OPENAI_API_KEY');
+    errors.push('OPENAI_API_KEY is missing or invalid');
   }
 
-  // Check Geoapify API key (optional - only warn if missing)
-  if (!validateGeoapifyApiKey()) {
-    console.warn('Geoapify API key is missing or invalid. Distance calculations will use fallback estimates.');
+  if (!process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY.trim() === '') {
+    missingKeys.push('GOOGLE_MAPS_API_KEY');
+    errors.push('GOOGLE_MAPS_API_KEY is missing or invalid');
   }
 
   return {
@@ -44,13 +41,13 @@ export function areApisReady(): boolean {
 // Get API status for debugging
 export function getApiStatus() {
   return {
-    openrouter: {
-      configured: !!(process.env.DS_KEY && process.env.DS_KEY.trim() !== ''),
-      keyPresent: !!(process.env.DS_KEY && process.env.DS_KEY.trim() !== '')
+    openai: {
+      configured: !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim() !== ''),
+      keyPresent: !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim() !== '')
     },
-    geoapify: {
-      configured: validateGeoapifyApiKey(),
-      keyPresent: !!(process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY && process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY.trim() !== '')
+    googleMaps: {
+      configured: !!(process.env.GOOGLE_MAPS_API_KEY && process.env.GOOGLE_MAPS_API_KEY.trim() !== ''),
+      keyPresent: !!(process.env.GOOGLE_MAPS_API_KEY && process.env.GOOGLE_MAPS_API_KEY.trim() !== '')
     }
   };
 }
@@ -59,11 +56,11 @@ export function getApiStatus() {
 export function logApiStatus() {
   const status = getApiStatus();
   console.log('API Configuration Status:', {
-
-    geoapify: status.geoapify.configured ? '✅ Ready' : '❌ Not configured'
+    openai: status.openai.configured ? '✅ Ready' : '❌ Not configured',
+    googleMaps: status.googleMaps.configured ? '✅ Ready' : '❌ Not configured'
   });
 
-  if (!status.geoapify.configured) {
+  if (!status.openai.configured || !status.googleMaps.configured) {
     console.warn('Some APIs are not properly configured. Check your .env file.');
   }
 }

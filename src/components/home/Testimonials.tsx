@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { FiStar } from 'react-icons/fi';
 
 /**
@@ -38,7 +39,7 @@ const Testimonials = () => {
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">What Our Travelers Say</h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Don't just take our word for it. Here's what travelers have experienced with our AI itinerary planner.
+            Don&apos;t just take our word for it. Here&apos;s what travelers have experienced with our AI itinerary planner.
           </p>
         </div>
 
@@ -53,9 +54,11 @@ const Testimonials = () => {
               className="bg-white rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100"
             >
               <div className="flex items-center mb-4">
-                <img
+                <Image
                   src={testimonial.image}
                   alt={testimonial.name}
+                  width={48}
+                  height={48}
                   className="w-12 h-12 rounded-full mr-4 object-cover"
                 />
                 <div>

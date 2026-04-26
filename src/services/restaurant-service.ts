@@ -183,12 +183,18 @@ function toRadians(degrees: number): number {
 /**
  * Extract waypoints from route geometry (simplified)
  */
-function extractRouteWaypoints(geometry: { coordinates: number[][] }): Coordinates[] {
+function extractRouteWaypoints(geometry: { coordinates: unknown }): Coordinates[] {
   if (!geometry || !geometry.coordinates) {
     return [];
   }
 
-  const coordinates = geometry.coordinates;
+  // Handle both LineString (number[][]) and MultiLineString (number[][][])
+  let coordsArray = geometry.coordinates as unknown[];
+  if (coordsArray.length > 0 && Array.isArray(coordsArray[0]) && Array.isArray(coordsArray[0][0])) {
+    coordsArray = coordsArray[0] as unknown[]; // Take first line string
+  }
+  
+  const coordinates = coordsArray as number[][];
   const waypoints: Coordinates[] = [];
 
   // Take every 10th point to avoid too many API calls

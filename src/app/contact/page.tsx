@@ -61,7 +61,7 @@ export default function Contact() {
         >
           <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6">Contact Us</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Have questions about our AI travel planner? We're here to help! Reach out to our team using the form below.
+            Have questions about our AI travel planner? We&apos;re here to help! Reach out to our team using the form below.
           </p>
         </motion.div>
 
@@ -139,7 +139,7 @@ export default function Contact() {
                   <FiSend className="text-2xl" />
                 </div>
                 <h2 className="text-2xl font-semibold text-primary mb-4">Message Sent!</h2>
-                <p className="text-gray-600 mb-6">Thank you for reaching out. We'll get back to you as soon as possible.</p>
+                <p className="text-gray-600 mb-6">Thank you for reaching out. We&apos;ll get back to you as soon as possible.</p>
                 <button
                   onClick={() => setSubmitted(false)}
                   className="btn-secondary"

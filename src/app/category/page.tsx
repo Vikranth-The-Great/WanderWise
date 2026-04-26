@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
@@ -42,7 +42,7 @@ const categoryOptions = {
  * Category page component.
  * Allows users to select a specific category based on their traveler type (e.g., Age group for Solo).
  */
-export default function CategoryPage() {
+function CategoryPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -362,5 +362,22 @@ export default function CategoryPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function CategoryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading categories...</p>
+          </div>
+        </div>
+      }
+    >
+      <CategoryPageContent />
+    </Suspense>
   );
 }

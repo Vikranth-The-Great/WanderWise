@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { validateEnvironmentVariables } from '@/lib/config/env-validation';
 import { geocodeAddress, searchPlaces } from '@/lib/api/geoapify';
 
@@ -8,6 +8,22 @@ import { geocodeAddress, searchPlaces } from '@/lib/api/geoapify';
  * 
  * @returns JSON object with test results.
  */
+interface GeocodingResult {
+  success?: boolean;
+  error?: string;
+  testAddress?: string;
+  coordinates?: unknown;
+}
+
+interface PlacesSearchResult {
+  success?: boolean;
+  error?: string;
+  testQuery?: string;
+  testCoordinates?: { lat: number; lng: number };
+  placesFound?: number;
+  samplePlace?: unknown;
+}
+
 export async function GET() {
   try {
     const results = {
@@ -18,8 +34,8 @@ export async function GET() {
       geoapify: {
         status: 'unknown',
         error: null as string | null,
-        geocoding: null as any,
-        placesSearch: null as any
+        geocoding: null as GeocodingResult | null,
+        placesSearch: null as PlacesSearchResult | null
       }
     };
 

@@ -191,7 +191,7 @@ export default function AboutPage() {
           >
             <h2 className="text-4xl md:text-5xl font-bold text-blue-900 mb-4">Our Journey</h2>
             <p className="text-xl text-gray-600">
-              From idea to reality - the story of how we're revolutionizing travel planning.
+              From idea to reality - the story of how we&apos;re revolutionizing travel planning.
             </p>
           </motion.div>
 

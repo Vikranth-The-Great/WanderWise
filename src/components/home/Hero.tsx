@@ -34,7 +34,7 @@ const Hero = () => {
           </h1>
           <p className="text-xl text-white/90 mb-8">
             Create personalized travel itineraries in seconds with our AI-powered planning tool.
-            Just tell us where and when - we'll handle the rest.
+            Just tell us where and when - we&apos;ll handle the rest.
           </p>
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}

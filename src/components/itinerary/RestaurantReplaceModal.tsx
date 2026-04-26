@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, MapPin, Star, Clock, Navigation } from 'lucide-react';
 import { Restaurant, getRestaurantsForMealSlot } from '@/services/restaurant-service';
 import { Coordinates } from '@/lib/api/geoapify';
@@ -34,13 +34,7 @@ const RestaurantReplaceModal: React.FC<RestaurantReplaceModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'nearby' | 'route'>('nearby');
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchRestaurants();
-    }
-  }, [isOpen, currentCoordinates, nextCoordinates]);
-
-  const fetchRestaurants = async () => {
+  const fetchRestaurants = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -68,7 +62,13 @@ const RestaurantReplaceModal: React.FC<RestaurantReplaceModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentCoordinates, nextCoordinates, mealType]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchRestaurants();
+    }
+  }, [isOpen, fetchRestaurants]);
 
   const handleSelectRestaurant = (restaurant: Restaurant) => {
     onSelectRestaurant(restaurant);

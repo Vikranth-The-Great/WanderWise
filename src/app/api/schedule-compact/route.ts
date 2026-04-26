@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { parse } from 'csv-parse/sync';
+import { parseCsv } from '@/lib/utils/csv-parse';
 
 // Import the formatter utility
-const { formatScheduleToCompact } = require('../../../utils/schedule-formatter.js');
+import { formatScheduleToCompact } from '@/utils/schedule-formatter';
 
 // Helper function to parse duration from text like "2-3 hours" or "30-45 minutes"
 function parseDuration(durationText: string): number {
@@ -55,10 +55,23 @@ interface ScheduleRequest {
   destination: string;
 }
 
+interface Day {
+  day: number;
+  breakfast: { type: string; time: string; name: string } | null;
+  lunch: { type: string; time: string; name: string } | null;
+  dinner: { type: string; time: string; name: string } | null;
+  attractions: Array<{
+    id: string;
+    name: string;
+    time: string;
+    duration: number;
+  }>;
+}
+
 function parseSchedulingResponse(response: string, attractions: Attraction[]) {
   const lines = response.split('\n').filter(line => line.trim());
-  const schedule: any[] = [];
-  let currentDay: any = null;
+  const schedule: Day[] = [];
+  let currentDay: Day | null = null;
 
   for (const line of lines) {
     const trimmedLine = line.trim();
@@ -160,13 +173,10 @@ export async function POST(request: NextRequest) {
     // Load attractions from CSV
     const csvPath = path.join(process.cwd(), 'data', 'attractions-database.csv');
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
-    const records = parse(csvContent, {
-      columns: true,
-      skip_empty_lines: true
-    });
+    const records = parseCsv<Record<string, string>>(csvContent);
 
     // Map CSV columns to our interface
-    const attractions: Attraction[] = records.map((row: any) => ({
+    const attractions: Attraction[] = records.map((row: Record<string, string>) => ({
       id: row.A_id || row.id || row.ID,
       name: row.Attraction || row.name,
       theme: row.Travel_Theme || row.theme,
@@ -319,10 +329,6 @@ D=20:30-21:30
       success: true,
       data: {
         schedule
-      },
-      metadata: {
-        tokensUsed: aiResponse.usage?.total_tokens || 0,
-        note: 'Generated using OpenRouter AI API with DeepSeek model'
       }
     };
 

@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
     const endpoint = searchParams.get('endpoint');
     const waypoints = searchParams.get('waypoints');
     const mode = searchParams.get('mode') || 'drive';
-    const query = searchParams.get('query') || '';
     const lat = searchParams.get('lat');
     const lng = searchParams.get('lng');
     const radius = searchParams.get('radius') || '1500';
@@ -89,7 +88,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   return NextResponse.json(
     { error: 'POST method not supported' },
     { status: 405 }

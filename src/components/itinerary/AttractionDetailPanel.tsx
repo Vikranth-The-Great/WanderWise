@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { X, MapPin, Clock, DollarSign, ExternalLink, ChevronDown, ChevronUp, Calendar, Timer, Sparkles, Star } from 'lucide-react';
+import { X, MapPin, Clock, DollarSign, ChevronDown, Calendar, Timer, Sparkles, Star } from 'lucide-react';
 
 interface AttractionDetailPanelProps {
   isOpen: boolean;

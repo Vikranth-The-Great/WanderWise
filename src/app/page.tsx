@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { FaPlane, FaMapMarkedAlt, FaCalendarAlt, FaUser } from "react-icons/fa";
-import { useMemo, useCallback } from 'react';
+import { useMemo } from 'react';
 
 /**
  * Home page component.
@@ -38,6 +38,8 @@ export default function Home() {
       gradient: "from-green-400 to-teal-500"
     }
   ], []);
+
+  void testimonials;
 
   // Memoize step data to prevent unnecessary re-renders
   const steps = useMemo(() => [
@@ -255,7 +257,7 @@ export default function Home() {
               </div>
 
               <p className="text-gray-700 text-lg leading-relaxed mb-6 italic">
-                "The AI itinerary planner saved me hours of research. My trip to Japan was perfectly organized with a great mix of popular spots and hidden gems."
+                &quot;The AI itinerary planner saved me hours of research. My trip to Japan was perfectly organized with a great mix of popular spots and hidden gems.&quot;
               </p>
 
               <div className="flex items-center justify-center">
@@ -279,7 +281,7 @@ export default function Home() {
               </div>
 
               <p className="text-gray-700 text-lg leading-relaxed mb-6 italic">
-                "I loved how easy it was to customize my itinerary. The suggestions were spot on and I discovered places I wouldn't have found otherwise."
+                &quot;I loved how easy it was to customize my itinerary. The suggestions were spot on and I discovered places I wouldn&apos;t have found otherwise.&quot;
               </p>
 
               <div className="flex items-center justify-center">
@@ -303,7 +305,7 @@ export default function Home() {
               </div>
 
               <p className="text-gray-700 text-lg leading-relaxed mb-6 italic">
-                "As a frequent traveler, I've tried many planning tools, but this AI planner is by far the most intuitive and accurate. Highly recommended!"
+                &quot;As a frequent traveler, I&apos;ve tried many planning tools, but this AI planner is by far the most intuitive and accurate. Highly recommended!&quot;
               </p>
 
               <div className="flex items-center justify-center">

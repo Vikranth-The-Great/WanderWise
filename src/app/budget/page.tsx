@@ -95,12 +95,6 @@ export default function BudgetPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const validateBudgetRange = (min: number, max: number, constraints = budgetConstraints): boolean => {
-    return min >= constraints.MIN_BUDGET &&
-      max <= constraints.MAX_BUDGET &&
-      min < max;
-  };
-
   const handleBudgetChange = (value: number) => {
     console.log('💰 USER INPUT - Budget Selection:', {
       selectedBudget: value,

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 // dynamic import removed
 import toast from 'react-hot-toast';
-import { MapPin, Clock, DollarSign, FileText, Download, ChevronLeft, ChevronRight, Users } from 'lucide-react';
-import { ItineraryResponse } from '@/app/api/generate-itinerary/route';
+import { MapPin, Clock, FileText, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ItineraryResponse } from '@/types/itinerary';
+import ItineraryTimeline from '@/components/itinerary/ItineraryTimeline';
 import RestaurantReplaceModal from '@/components/itinerary/RestaurantReplaceModal';
 import AttractionDetailPanel from '@/components/itinerary/AttractionDetailPanel';
 import DayMap from '@/components/itinerary/DayMap';
@@ -203,16 +204,17 @@ const dummyItinerary: ItineraryData = {
     ]
 };
 
+void dummyItinerary;
+
 /**
  * Itinerary Results page component.
  * Displays the generated itinerary with details on daily activities, costs, and options to download or modify.
  */
-export default function ItineraryResultsPage() {
+function ItineraryResultsPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [itinerary, setItinerary] = useState<ItineraryData | null>(null);
     const [selectedDay, setSelectedDay] = useState(1);
-    const [showSummary, setShowSummary] = useState(false);
     const [travelerData, setTravelerData] = useState({
         travelerType: '',
         budget: '',
@@ -225,7 +227,6 @@ export default function ItineraryResultsPage() {
     // Restaurant replace modal state
     const [showRestaurantModal, setShowRestaurantModal] = useState(false);
     const [selectedMealActivity, setSelectedMealActivity] = useState<Activity | null>(null);
-    const [currentDayActivities, setCurrentDayActivities] = useState<Activity[]>([]);
 
     // Attraction detail panel state
     const [showAttractionPanel, setShowAttractionPanel] = useState(false);
@@ -507,7 +508,6 @@ export default function ItineraryResultsPage() {
         if (!currentDay) return;
 
         setSelectedMealActivity(activity);
-        setCurrentDayActivities(currentDay.activities);
         setShowRestaurantModal(true);
     };
 
@@ -723,6 +723,26 @@ export default function ItineraryResultsPage() {
                 {/* Main Content */}
                 <div className="container mx-auto px-4 py-6">
                     <div className="flex flex-col md:flex-row gap-6 max-w-7xl mx-auto">
+                        <div className="w-full mb-2">
+                            <ItineraryTimeline
+                                destination={itinerary.destination}
+                                days={itinerary.dayPlans.map((day) => ({
+                                    day: day.day,
+                                    date: day.date,
+                                    activities: day.activities.map((activity) => ({
+                                        time: activity.time,
+                                        title: activity.title,
+                                        location: activity.location,
+                                        description: activity.description,
+                                        duration: activity.duration,
+                                        cost: activity.cost,
+                                        type: activity.type,
+                                        rating: undefined
+                                    }))
+                                }))}
+                            />
+                        </div>
+
                         {/* Left Side - Day Navigation and Activities */}
                         <div className="w-full md:w-3/5 max-w-4xl mx-auto md:mx-0">
                             {/* Enhanced Day Navigation */}
@@ -1104,7 +1124,7 @@ export default function ItineraryResultsPage() {
                                     <DayMap
                                         activities={itinerary?.dayPlans[selectedDay - 1]?.activities || []}
                                         selectedDay={selectedDay}
-                                        apiKey={process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || ''}
+                                        apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}
                                     />
                                 </div>
                             </div>
@@ -1245,7 +1265,7 @@ export default function ItineraryResultsPage() {
                                                             <div className={`flex-1 p-3 rounded-xl border ${getActivityBackground(activity)} hover:shadow-md transition-all duration-200 hover:-translate-y-0.5`}>
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
-                                                                        <span className="text-sm">{getActivityIcon(activity)}</span>
+                                                                        <span className="text-sm">{getActivityIcon(activity.type)}</span>
                                                                     </div>
                                                                     <div className="flex-1 min-w-0">
                                                                         <h5 className={`font-medium text-sm ${getActivityTextColor(activity)} truncate`}>
@@ -1300,5 +1320,22 @@ export default function ItineraryResultsPage() {
                 />
             )}
         </>
+    );
+}
+
+export default function ItineraryResultsPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600">Loading your itinerary...</p>
+                    </div>
+                </div>
+            }
+        >
+            <ItineraryResultsPageContent />
+        </Suspense>
     );
 }

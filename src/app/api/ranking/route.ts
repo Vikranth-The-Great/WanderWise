@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
-import { parse } from 'csv-parse/sync';
+import { parseCsv } from '@/lib/utils/csv-parse';
 
 /**
  * User preferences for ranking attractions.
@@ -70,10 +70,7 @@ export async function POST(request: NextRequest) {
     // Load attractions from CSV
     const csvPath = path.join(process.cwd(), 'data', 'attractions-database.csv');
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
-    const allAttractions: Attraction[] = parse(csvContent, {
-      columns: true,
-      skip_empty_lines: true
-    }).map((row: any) => ({
+    const allAttractions: Attraction[] = parseCsv<Record<string, string>>(csvContent).map((row) => ({
       id: row.A_id || row.id || row.ID,
       name: row.Attraction || row.name || row.Name,
       destination: row.Place || row.destination || row.Destination,
@@ -81,7 +78,7 @@ export async function POST(request: NextRequest) {
       budget_level: 'moderate', // Default since this column doesn't exist in CSV
       age_suitability: 'all', // Default since this column doesn't exist in CSV
       group_suitability: 'all' // Default since this column doesn't exist in CSV
-    })).filter(attraction => attraction.id && attraction.name && attraction.destination);
+    })).filter((attraction) => attraction.id && attraction.name && attraction.destination);
 
     // Debug: Log first few attractions to see the data structure
     console.log('First 3 attractions:', allAttractions.slice(0, 3));
@@ -212,7 +209,7 @@ Provide your ranking now:`;
           let errorData;
           try {
             errorData = JSON.parse(errorText);
-          } catch (e) {
+          } catch {
             errorData = { error: { message: errorText } };
           }
 

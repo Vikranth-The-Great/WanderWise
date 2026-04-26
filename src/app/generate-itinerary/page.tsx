@@ -1,16 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { ItineraryResponse } from '@/app/api/generate-itinerary/route';
-// Updated to use AI-powered itinerary generation
+import { GeneratedItinerary, ItineraryResponse } from '@/types/itinerary';
 
 interface LoadingStep {
   id: number;
   message: string;
   duration: number;
+}
+
+interface ItineraryRequestData {
+  destinations?: { name?: string }[];
+  destination?: string;
+  startDate: string;
+  endDate: string;
+  travelerType: string;
+  budget: string;
+  budgetRange?: string;
+  budgetType?: string;
+  themes: string[];
+  totalDays?: number;
+  days?: number;
+  category?: string;
 }
 
 const loadingSteps: LoadingStep[] = [
@@ -21,11 +35,97 @@ const loadingSteps: LoadingStep[] = [
   { id: 5, message: 'Finalizing AI-powered itinerary', duration: 2000 }
 ];
 
+function validateRequestData(requestData: ItineraryRequestData): string[] {
+  const errors: string[] = [];
+
+  if (!requestData.destinations || !Array.isArray(requestData.destinations) || requestData.destinations.length === 0) {
+    if (!requestData.destination || requestData.destination.trim() === '') {
+      errors.push('At least one destination is required');
+    }
+  }
+
+  if (!requestData.startDate || !requestData.endDate) {
+    errors.push('Travel dates are required');
+  }
+
+  if (new Date(requestData.startDate) > new Date(requestData.endDate)) {
+    errors.push('End date must be on or after start date');
+  }
+
+  if (!requestData.travelerType || requestData.travelerType.trim() === '') {
+    errors.push('Traveler type is required');
+  }
+
+  if (!requestData.budget || requestData.budget.trim() === '') {
+    errors.push('Budget information is required');
+  }
+
+  if (!requestData.themes || requestData.themes.length === 0) {
+    errors.push('At least one theme must be selected');
+  }
+
+  return errors;
+}
+
+function normalizeBudgetLevel(
+  budget: string,
+  budgetType?: string,
+  budgetRange?: string
+): 'cheap' | 'moderate' | 'luxury' {
+  const combinedBudget = `${budget || ''} ${budgetType || ''} ${budgetRange || ''}`.toLowerCase();
+
+  if (combinedBudget.includes('luxury') || combinedBudget.includes('premium') || combinedBudget.includes('high')) {
+    return 'luxury';
+  }
+
+  if (combinedBudget.includes('cheap') || combinedBudget.includes('economy') || combinedBudget.includes('budget') || combinedBudget.includes('low')) {
+    return 'cheap';
+  }
+
+  return 'moderate';
+}
+
+function normalizeTravelerType(travelerType: string): 'solo' | 'couple' | 'family' | 'friends' {
+  const normalizedType = travelerType.toLowerCase();
+
+  if (normalizedType.includes('couple')) {
+    return 'couple';
+  }
+
+  if (normalizedType.includes('family')) {
+    return 'family';
+  }
+
+  if (normalizedType.includes('friend')) {
+    return 'friends';
+  }
+
+  return 'solo';
+}
+
+function normalizeItineraryResponse(result: unknown): ItineraryResponse | GeneratedItinerary {
+  if (!result || typeof result !== 'object') {
+    throw new Error('Invalid response format from server');
+  }
+
+  const maybeResult = result as Record<string, unknown>;
+
+  if (Array.isArray(maybeResult.itinerary)) {
+    return maybeResult as unknown as GeneratedItinerary;
+  }
+
+  if (maybeResult.success && maybeResult.data && typeof maybeResult.data === 'object') {
+    return maybeResult.data as ItineraryResponse;
+  }
+
+  throw new Error('Invalid response format from server');
+}
+
 /**
  * Generate Itinerary page component.
  * Handles the AI generation process, displaying progress steps and redirecting to results.
  */
-export default function GenerateItineraryPage() {
+function GenerateItineraryPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(0);
@@ -39,45 +139,10 @@ export default function GenerateItineraryPage() {
     themes: [] as string[],
     groupSize: ''
   });
-  const [generatedItinerary, setGeneratedItinerary] = useState<ItineraryResponse | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // Function to validate request data before sending to API
-  const validateRequestData = (requestData: any) => {
-    const errors = [];
-
-    // Check for destinations array (new format) or single destination (legacy)
-    if (!requestData.destinations || !Array.isArray(requestData.destinations) || requestData.destinations.length === 0) {
-      if (!requestData.destination || requestData.destination.trim() === '') {
-        errors.push('At least one destination is required');
-      }
-    }
-
-    if (!requestData.startDate || !requestData.endDate) {
-      errors.push('Travel dates are required');
-    }
-
-    if (new Date(requestData.startDate) >= new Date(requestData.endDate)) {
-      errors.push('End date must be after start date');
-    }
-
-    if (!requestData.travelerType || requestData.travelerType.trim() === '') {
-      errors.push('Traveler type is required');
-    }
-
-    if (!requestData.budget || requestData.budget.trim() === '') {
-      errors.push('Budget information is required');
-    }
-
-    if (!requestData.themes || requestData.themes.length === 0) {
-      errors.push('At least one theme must be selected');
-    }
-
-    return errors;
-  };
-
   // Function to generate itinerary using AI API
-  const generateItinerary = async (requestData: any) => {
+  const generateItinerary = useCallback(async (requestData: ItineraryRequestData) => {
     try {
       // Validate request data first
       const validationErrors = validateRequestData(requestData);
@@ -96,14 +161,23 @@ export default function GenerateItineraryPage() {
         category: requestData.category
       });
 
-      console.log('🎯 FRONTEND: Making API request to /api/ai-itinerary...');
+      const destination = requestData.destinations?.[0]?.name || requestData.destination;
+      const budgetLevel = normalizeBudgetLevel(requestData.budget, requestData.budgetType, requestData.budgetRange);
 
-      const response = await fetch('/api/ai-itinerary', {
+      console.log('🎯 FRONTEND: Making API request to /api/generate-itinerary...');
+
+      const response = await fetch('/api/generate-itinerary', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData),
+        body: JSON.stringify({
+          destination,
+          days: requestData.totalDays || requestData.days || 1,
+          travelerType: normalizeTravelerType(requestData.travelerType),
+          budget: budgetLevel,
+          themes: requestData.themes
+        }),
       });
 
       if (!response.ok) {
@@ -111,7 +185,7 @@ export default function GenerateItineraryPage() {
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
-        } catch (parseError) {
+        } catch {
           // If we can't parse the error response, use the status text
           errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
@@ -128,84 +202,102 @@ export default function GenerateItineraryPage() {
         throw new Error('Invalid response format from server');
       }
 
-      if (result.success && result.data) {
-        // The AI API returns data in a different format, transform it to ItineraryResponse
-        const apiData = result.data;
+      const apiData = normalizeItineraryResponse(result);
+      const legacyApiData = apiData as ItineraryResponse;
+      const generatedApiData = apiData as GeneratedItinerary;
 
-        console.log('🎯 FRONTEND: API Data Structure:', {
-          hasData: !!apiData,
-          dataKeys: Object.keys(apiData),
-          hasDayPlans: !!apiData.dayPlans,
-          dayPlansLength: apiData.dayPlans ? apiData.dayPlans.length : 0,
-          hasItinerary: !!apiData.itinerary,
-          itineraryLength: apiData.itinerary ? apiData.itinerary.length : 0
-        });
+      console.log('🎯 FRONTEND: API Data Structure:', {
+        hasData: !!apiData,
+        dataKeys: Object.keys(apiData),
+        hasDayPlans: 'dayPlans' in apiData,
+        dayPlansLength: 'dayPlans' in apiData ? legacyApiData.dayPlans.length : 0,
+        hasItinerary: 'itinerary' in apiData,
+        itineraryLength: 'itinerary' in apiData ? generatedApiData.itinerary.length : 0
+      });
 
-        // Extract day plans from the API response
-        let dayPlans = [];
-        if (apiData.dayPlans && Array.isArray(apiData.dayPlans)) {
-          dayPlans = apiData.dayPlans;
-          console.log('🎯 FRONTEND: Using dayPlans from API response, count:', dayPlans.length);
-        } else if (apiData.itinerary && Array.isArray(apiData.itinerary)) {
-          // Handle alternative structure
-          dayPlans = apiData.itinerary;
-          console.log('🎯 FRONTEND: Using itinerary from API response, count:', dayPlans.length);
-        }
-
-        console.log('🎯 FRONTEND: Final dayPlans array:', dayPlans);
-
-        if (dayPlans.length === 0) {
-          console.error('🚨 FRONTEND: No day plans found in API response. API Data:', apiData);
-          throw new Error('No day plans found in API response');
-        }
-
-        // Check if this is fallback sample data
-        if (apiData.metadata && apiData.metadata.fallbackUsed) {
-          console.log('ℹ️ FRONTEND: Using fallback sample data due to AI API limitations');
-          // Show user-friendly notification
-          alert('📋 Sample Itinerary\n\nThe AI service has reached its daily free limit. You are viewing sample data to explore the features.\n\nThe service will reset in a few hours, or you can upgrade for unlimited access.');
-        }
-
-        // Transform the response to match ItineraryResponse format
-        const transformedItinerary = {
-          destination: apiData.destination || 'Unknown',
-          totalDays: apiData.totalDays || apiData.duration || dayPlans.length,
-          estimatedCost: apiData.estimatedCost || 'Not specified',
-          humorousTitle: apiData.humorousTitle || `Amazing ${apiData.destination} Adventure!`,
-          summary: apiData.summary || `Discover the best of ${apiData.destination} with this carefully crafted itinerary.`,
-          dayPlans: dayPlans.map((day, index) => {
-            // Use start date from search params or a stable fallback
-            const startDate = searchParams.get('startDate') || '2024-03-15';
-            const baseDate = new Date(startDate);
-            const dayDate = new Date(baseDate.getTime() + index * 24 * 60 * 60 * 1000);
-
-            return {
-              day: day.day || index + 1,
-              date: day.date || dayDate.toISOString().split('T')[0],
-              activities: (day.activities || []).map((activity) => ({
-                time: activity.time || '09:00',
-                title: activity.name || activity.title || 'Activity',
-                location: activity.location || 'Location',
-                description: activity.description || `${activity.type === 'meal' ? 'Meal time' : 'Attraction visit'} - ${activity.name || 'Activity'}`,
-                duration: activity.duration ? `${activity.duration} minutes` : '1 hour',
-                cost: activity.cost || '₹0',
-                type: activity.type || 'attraction',
-                coordinates: activity.coordinates || { lat: 0, lng: 0 }
-              }))
-            };
-          })
-        };
-
-        setGeneratedItinerary(transformedItinerary);
-
-        // Store the generated itinerary in localStorage immediately
-        localStorage.setItem('generatedItinerary', JSON.stringify(transformedItinerary));
-        console.log('✅ FRONTEND: Stored itinerary in localStorage:', transformedItinerary.destination);
-
-        return transformedItinerary;
-      } else {
-        throw new Error(result.error || 'AI itinerary generation failed - no data returned');
+      let dayPlans: Array<{
+        day?: number;
+        date?: string;
+        activities?: Array<{
+          time?: string;
+          name?: string;
+          title?: string;
+          location?: string;
+          description?: string;
+          duration?: string;
+          cost?: string;
+          type?: string;
+          coordinates?: { lat: number; lng: number };
+        }>;
+      }> = [];
+      if ('dayPlans' in apiData && Array.isArray(legacyApiData.dayPlans)) {
+        dayPlans = legacyApiData.dayPlans;
+        console.log('🎯 FRONTEND: Using dayPlans from API response, count:', dayPlans.length);
+      } else if ('itinerary' in apiData && Array.isArray(generatedApiData.itinerary)) {
+        dayPlans = generatedApiData.itinerary.map((day) => ({
+          day: day.day,
+          date: day.date,
+          activities: day.activities.map((activity) => ({
+            time: activity.time,
+            title: activity.name,
+            location: activity.address,
+            description: activity.description,
+            duration: '1 hour',
+            cost: activity.rating ? `⭐ ${activity.rating}` : 'Not specified',
+            type: activity.type,
+            coordinates: activity.coordinates
+          }))
+        }));
+        console.log('🎯 FRONTEND: Using itinerary from API response, count:', dayPlans.length);
       }
+
+      console.log('🎯 FRONTEND: Final dayPlans array:', dayPlans);
+
+      if (dayPlans.length === 0) {
+        console.error('🚨 FRONTEND: No day plans found in API response. API Data:', apiData);
+        throw new Error('No day plans found in API response');
+      }
+
+      // Check if this is fallback sample data
+      if ((apiData as { metadata?: { fallbackUsed?: boolean } }).metadata?.fallbackUsed) {
+        console.log('ℹ️ FRONTEND: Using fallback sample data due to AI API limitations');
+        alert('📋 Sample Itinerary\n\nThe AI service has reached its daily free limit. You are viewing sample data to explore the features.\n\nThe service will reset in a few hours, or you can upgrade for unlimited access.');
+      }
+
+      // Transform the response to match ItineraryResponse format
+      const transformedItinerary: ItineraryResponse = {
+        destination: legacyApiData.destination || generatedApiData.destination || 'Unknown',
+        totalDays: legacyApiData.totalDays || generatedApiData.totalDays || dayPlans.length,
+        estimatedCost: 'Not specified',
+        humorousTitle: `Amazing ${legacyApiData.destination || generatedApiData.destination} Adventure!`,
+        summary: `Discover the best of ${legacyApiData.destination || generatedApiData.destination} with this carefully crafted itinerary.`,
+        dayPlans: dayPlans.map((day: { day?: number; date?: string; activities?: Array<{ time?: string; name?: string; title?: string; location?: string; description?: string; duration?: string; cost?: string; type?: string; coordinates?: { lat: number; lng: number } }> }, index: number) => {
+          const startDate = searchParams.get('startDate') || '2024-03-15';
+          const baseDate = new Date(startDate);
+          const dayDate = new Date(baseDate.getTime() + index * 24 * 60 * 60 * 1000);
+
+          return {
+            day: day.day || index + 1,
+            date: day.date || dayDate.toISOString().split('T')[0],
+            activities: (day.activities || []).map((activity: { time?: string; name?: string; title?: string; location?: string; description?: string; duration?: string; cost?: string; type?: string; coordinates?: { lat: number; lng: number } }) => ({
+              time: activity.time || '09:00',
+              title: activity.name || activity.title || 'Activity',
+              location: activity.location || 'Location',
+              description: activity.description || `${activity.type === 'meal' ? 'Meal time' : 'Attraction visit'} - ${activity.name || 'Activity'}`,
+              duration: activity.duration ? `${activity.duration} minutes` : '1 hour',
+              cost: activity.cost || '₹0',
+              type: (activity.type === 'meal' || activity.type === 'accommodation' || activity.type === 'transport' ? activity.type : 'attraction'),
+              coordinates: activity.coordinates || { lat: 0, lng: 0 }
+            }))
+          };
+        })
+      };
+
+      // Store the generated itinerary in localStorage immediately
+      localStorage.setItem('generatedItinerary', JSON.stringify(transformedItinerary));
+      console.log('✅ FRONTEND: Stored itinerary in localStorage:', transformedItinerary.destination);
+
+      return transformedItinerary;
     } catch (error) {
       console.error('Error generating AI itinerary:', error);
 
@@ -228,7 +320,30 @@ export default function GenerateItineraryPage() {
       toast.error(userMessage);
       throw error;
     }
-  };
+  }, [searchParams]);
+
+  const handleRedirectToResults = useCallback((finalTravelerType?: string, finalBudget?: string, finalCategory?: string, finalThemes?: string[]) => {
+    const redirectTravelerType = finalTravelerType || travelerData.travelerType;
+    const redirectBudget = finalBudget || travelerData.budget;
+    const redirectCategory = finalCategory || travelerData.category;
+    const redirectThemes = finalThemes || travelerData.themes;
+
+    console.log('ðŸ”„ REDIRECT TO RESULTS - Using data:', {
+      redirectTravelerType,
+      redirectBudget,
+      redirectCategory,
+      redirectThemes,
+      timestamp: new Date().toISOString()
+    });
+
+    const params = new URLSearchParams({
+      travelerType: redirectTravelerType,
+      budget: redirectBudget,
+      category: redirectCategory,
+      themes: redirectThemes.join(',')
+    });
+    router.push(`/itinerary-results?${params.toString()}`);
+  }, [router, travelerData]);
 
   useEffect(() => {
     // Add a small delay to ensure localStorage has been set
@@ -348,15 +463,11 @@ export default function GenerateItineraryPage() {
           if (stepIndex === 2 && !apiCalled) {
             apiCalled = true;
             try {
-              const enhancedTravelerType = groupSize
-                ? `${finalTravelerType} (Group Size: ${groupSize})`
-                : finalTravelerType;
-
               const aiItineraryRequest = {
                 destinations,
                 startDate,
                 endDate,
-                travelerType: enhancedTravelerType,
+                travelerType: finalTravelerType,
                 budget: finalBudget,
                 category: finalCategory,
                 themes: finalThemes,
@@ -395,13 +506,14 @@ export default function GenerateItineraryPage() {
     };
 
     // Add a small delay to ensure localStorage is ready
-    setTimeout(checkDataAndGenerate, 100);
-  }, [searchParams, router]);
+    const initialTimer = window.setTimeout(checkDataAndGenerate, 100);
 
-  const handleRedirectToResults = (finalTravelerType?: string, finalBudget?: string, finalCategory?: string, finalThemes?: string[]) => {
-    // Itinerary is already stored in localStorage during generation
+    return () => {
+      window.clearTimeout(initialTimer);
+    };
+  }, [apiError, generateItinerary, handleRedirectToResults, router, searchParams]);
 
-    // Use passed parameters or fall back to travelerData state
+  const unusedHandleRedirectToResults = useCallback((finalTravelerType?: string, finalBudget?: string, finalCategory?: string, finalThemes?: string[]) => {
     const redirectTravelerType = finalTravelerType || travelerData.travelerType;
     const redirectBudget = finalBudget || travelerData.budget;
     const redirectCategory = finalCategory || travelerData.category;
@@ -422,7 +534,9 @@ export default function GenerateItineraryPage() {
       themes: redirectThemes.join(',')
     });
     router.push(`/itinerary-results?${params.toString()}`);
-  };
+  }, [router, travelerData]);
+
+  void unusedHandleRedirectToResults;
 
   const handleRetry = () => {
     setApiError(null);
@@ -622,5 +736,22 @@ export default function GenerateItineraryPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function GenerateItineraryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-purple-900 flex items-center justify-center px-4">
+          <div className="text-center text-white">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-400 mx-auto mb-4"></div>
+            <p>Loading itinerary generator...</p>
+          </div>
+        </div>
+      }
+    >
+      <GenerateItineraryPageContent />
+    </Suspense>
   );
 }

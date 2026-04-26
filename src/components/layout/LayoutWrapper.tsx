@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { FiUser, FiSettings, FiMenu, FiX } from 'react-icons/fi';
 import { useState } from 'react';
 
@@ -48,9 +49,11 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
           }`}>
           {/* Logo */}
           <div className="flex items-center z-10">
-            <img
+            <Image
               src="/images/partners/viva-logo.jpg"
               alt="Viva Logo"
+              width={100}
+              height={48}
               className="h-12 w-auto mr-3 rounded-lg shadow-lg"
             />
 

@@ -4,10 +4,29 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiCalendar, FiClock, FiArrowLeft, FiShare2, FiHeart, FiMessageSquare } from 'react-icons/fi';
+import Image from 'next/image';
 import Link from 'next/link';
 
 // Sample blog data - in a real app, this would come from an API or database
-const blogPosts = [
+interface BlogPost {
+  id: number;
+  title: string;
+  excerpt?: string;
+  content: string;
+  category: string;
+  date: string;
+  readTime: string;
+  author: {
+    name: string;
+    role?: string;
+    bio?: string;
+    image: string;
+  };
+  image: string;
+  relatedPosts: number[];
+}
+
+const blogPosts: BlogPost[] = [
   {
     id: 1,
     title: '10 Hidden Gems in Southeast Asia You Need to Visit',
@@ -137,8 +156,8 @@ const blogPosts = [
 export default function BlogPost() {
   const params = useParams();
   const router = useRouter();
-  const [post, setPost] = useState<any>(null);
-  const [relatedPosts, setRelatedPosts] = useState<any[]>([]);
+  const [post, setPost] = useState<BlogPost | null>(null);
+  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -177,7 +196,7 @@ export default function BlogPost() {
       <div className="min-h-screen py-20 bg-light-bg">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-3xl font-bold text-primary mb-6">Blog Post Not Found</h1>
-          <p className="text-lg text-gray-600 mb-8">The blog post you're looking for doesn't exist or has been removed.</p>
+          <p className="text-lg text-gray-600 mb-8">The blog post you&apos;re looking for doesn&apos;t exist or has been removed.</p>
           <Link href="/blogs" className="btn-primary">
             Back to Blogs
           </Link>
@@ -214,9 +233,11 @@ export default function BlogPost() {
         >
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="relative h-96">
-              <img
+              <Image
                 src={post.image}
                 alt={post.title}
+                fill
+                sizes="100vw"
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
@@ -229,9 +250,11 @@ export default function BlogPost() {
                   <h1 className="text-3xl md:text-4xl font-bold mb-4">{post.title}</h1>
                   <div className="flex flex-wrap items-center text-sm text-white/80">
                     <div className="flex items-center mr-6 mb-2">
-                      <img
+                      <Image
                         src={post.author.image}
                         alt={post.author.name}
+                        width={32}
+                        height={32}
                         className="w-8 h-8 rounded-full mr-2 object-cover"
                       />
                       <span>{post.author.name}</span>
@@ -264,9 +287,11 @@ export default function BlogPost() {
               {/* Social Sharing */}
               <div className="flex justify-between items-center mb-8 pb-6 border-b border-gray-200">
                 <div className="flex items-center">
-                  <img
+                  <Image
                     src={post.author.image}
                     alt={post.author.name}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded-full mr-4 object-cover"
                   />
                   <div>
@@ -320,9 +345,11 @@ export default function BlogPost() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold text-primary mb-4">About the Author</h3>
               <div className="flex items-center mb-4">
-                <img
+                <Image
                   src={post.author.image}
                   alt={post.author.name}
+                  width={64}
+                  height={64}
                   className="w-16 h-16 rounded-full mr-4 object-cover"
                 />
                 <div>
@@ -349,9 +376,11 @@ export default function BlogPost() {
                     >
                       <div className="flex items-start">
                         <div className="w-20 h-20 rounded-md overflow-hidden flex-shrink-0 mr-4">
-                          <img
+                          <Image
                             src={relatedPost.image}
                             alt={relatedPost.title}
+                            width={80}
+                            height={80}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>

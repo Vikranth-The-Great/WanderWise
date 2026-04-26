@@ -40,14 +40,23 @@ export interface PlacesSearchResult {
     properties: {
       name: string;
       formatted: string;
+      address_line1?: string;
       lat: number;
       lon: number;
       place_id: string;
       categories: string[];
+      rating?: number;
+      website?: string;
+      contact?: {
+        phone?: string;
+      };
       datasource: {
         sourcename: string;
         attribution: string;
       };
+    };
+    geometry: {
+      coordinates: [number, number];
     };
   }>;
 }
@@ -135,7 +144,7 @@ export async function searchPlaces(
     const data = await response.json();
 
     if (data.features && data.features.length > 0) {
-      return data.features.map((feature: any) => {
+      return (data as PlacesSearchResult).features.map((feature) => {
         const properties = feature.properties;
         const [lng, lat] = feature.geometry.coordinates;
 
@@ -168,7 +177,10 @@ export async function getRoute(
   distance: number;
   duration: number;
   coordinates: Coordinates[];
-  geometry?: any;
+  geometry?: {
+    type: string;
+    coordinates: number[][][];
+  };
 } | null> {
   try {
     const waypoints = `${start.lat},${start.lng}|${end.lat},${end.lng}`;
@@ -207,8 +219,7 @@ export async function getRoute(
 // Get places along a route
 export async function getPlacesAlongRoute(
   route: Coordinates[],
-  categories: string[] = PLACE_CATEGORIES.RESTAURANTS,
-  _maxDetour: number = 1000
+  categories: string[] = PLACE_CATEGORIES.RESTAURANTS
 ): Promise<PlaceDetails[]> {
   try {
     // Convert route to a line string for the API

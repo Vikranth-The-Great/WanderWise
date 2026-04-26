@@ -228,7 +228,7 @@ export default function ManualPlanning() {
                         <h3 className="text-lg font-medium text-gray-700 mb-2">Interests</h3>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(preferences)
-                            .filter(([_, value]) => value)
+                            .filter((entry) => entry[1])
                             .map(([key]) => (
                               <span key={key} className="bg-accent/20 text-accent px-3 py-1 rounded-full text-sm capitalize">
                                 {key}

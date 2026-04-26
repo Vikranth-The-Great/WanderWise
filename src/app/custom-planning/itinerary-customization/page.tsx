@@ -1,16 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Search, Filter, Plus, Eye, MapPin, Clock, Star, Edit, ExternalLink, Map, Minus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function ItineraryCustomization() {
-  const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [searchDropdown, setSearchDropdown] = useState<number | null>(null);
-  const [editingTiming, setEditingTiming] = useState<number | null>(null);
+  const [editingTiming, setEditingTiming] = useState<number | string | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [showAddActivityModal, setShowAddActivityModal] = useState(false);
-  const [customActivities, setCustomActivities] = useState<any[]>([]);
+  interface Activity {
+    id: string | number;
+    type: string;
+    name: string;
+    time: string;
+    location?: string;
+    category?: string;
+    icon?: string;
+  }
+  const [customActivities, setCustomActivities] = useState<Activity[]>([]);
   const [activityIdCounter, setActivityIdCounter] = useState(0);
 
   // Close dropdown when clicking outside
@@ -236,7 +244,7 @@ export default function ItineraryCustomization() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
                     </svg>
                   </button>
-                  <Filter className="w-5 h-5 cursor-pointer hover:text-gray-600 text-gray-400" title="Filter" />
+                  <Filter className="w-5 h-5 cursor-pointer hover:text-gray-600 text-gray-400" />
                 </div>
               </div>
 
@@ -377,14 +385,14 @@ export default function ItineraryCustomization() {
                                 ? 'bg-green-200 text-green-800'
                                 : 'bg-purple-200 text-purple-800'
                             }`}>
-                            {item.type === 'custom' ? item.title : item.category}
+                            {item.type === 'custom' ? item.name : (item as Activity).category}
                           </div>
                           <div>
                             <h3 className="font-semibold text-gray-900">
                               {item.type === 'custom' ? (
                                 <span className="flex items-center">
-                                  <span className="mr-2">{item.icon}</span>
-                                  {item.title}
+                                  <span className="mr-2">{(item as Activity).icon}</span>
+                                  {item.name}
                                 </span>
                               ) : (
                                 item.name
@@ -548,7 +556,7 @@ export default function ItineraryCustomization() {
                       const newActivity = {
                         id: `custom-${activityIdCounter}`,
                         type: 'custom',
-                        title: activity.type,
+                        name: activity.type,
                         time: '12:00',
                         duration: '1 hour',
                         icon: activity.icon

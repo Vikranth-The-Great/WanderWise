@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs';
-import { parse } from 'csv-parse/sync';
+import { parseCsv } from '@/lib/utils/csv-parse';
 
 /**
  * Request body for scheduling attractions.
@@ -18,6 +18,19 @@ interface Attraction {
   opening_hours: string;
   duration: number;
   destination: string;
+}
+
+interface Day {
+  day: number;
+  breakfast: { type: string; time: string; name: string } | null;
+  lunch: { type: string; time: string; name: string } | null;
+  dinner: { type: string; time: string; name: string } | null;
+  attractions: Array<{
+    id: string;
+    name: string;
+    time: string;
+    duration: number;
+  }>;
 }
 
 /**
@@ -66,10 +79,7 @@ export async function POST(request: NextRequest) {
     // Load attractions from CSV
     const csvPath = path.join(process.cwd(), 'data', 'attractions-database.csv');
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
-    const allAttractions: Attraction[] = parse(csvContent, {
-      columns: true,
-      skip_empty_lines: true
-    }).map((row: any) => ({
+    const allAttractions: Attraction[] = parseCsv<Record<string, string>>(csvContent).map((row) => ({
       id: row.A_id || row.id || row.ID,
       name: row.Attraction || row.name || row.Name,
       opening_hours: row['Opening_Time - Closing_Time'] || row.opening_hours || row.Opening_Hours || '09:00-18:00',
@@ -250,9 +260,9 @@ IMPORTANT: Copy this EXACT format with the provided attraction IDs. Do NOT chang
     });
 
     console.log('📅 SCHEDULING PROCESS - Final Schedule:');
-    schedule.forEach((day, index) => {
+    schedule.forEach((day) => {
       console.log(`  Day ${day.day}: ${day.attractions.length} attractions`);
-      day.attractions.forEach((attraction: any) => {
+      day.attractions.forEach((attraction) => {
         console.log(`    - ${attraction.id}: ${attraction.name} (${attraction.time})`);
       });
     });
@@ -295,8 +305,8 @@ IMPORTANT: Copy this EXACT format with the provided attraction IDs. Do NOT chang
  */
 function parseSchedulingResponse(response: string, attractions: Attraction[]) {
   const lines = response.split('\n').filter(line => line.trim());
-  const schedule: any[] = [];
-  let currentDay: any = null;
+  const schedule: Day[] = [];
+  let currentDay: Day | null = null;
 
   for (const line of lines) {
     const trimmedLine = line.trim();

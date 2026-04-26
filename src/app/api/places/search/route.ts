@@ -1,61 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-import fs from 'fs';
-import { parse } from 'csv-parse/sync';
 
-// Cache the places to avoid reading CSV on every request
-let cachedPlaces: Set<string> | null = null;
+const PLACES_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
+const FIELD_MASK = ['places.displayName', 'places.formattedAddress'].join(',');
 
-function getPlaces(): Set<string> {
-  if (cachedPlaces) return cachedPlaces;
+interface GoogleSuggestionPlace {
+  displayName?: {
+    text?: string;
+  };
+  formattedAddress?: string;
+}
 
-  try {
-    const csvPath = path.join(process.cwd(), 'data', 'attractions-database.csv');
-    const csvContent = fs.readFileSync(csvPath, 'utf-8');
-    const records = parse(csvContent, {
-      columns: true,
-      skip_empty_lines: true
-    });
-
-    const places = new Set<string>();
-    records.forEach((record: any) => {
-      // Extract place names from "Place" or "Destination" columns
-      const place = record.Place || record.destination || record.Destination;
-      if (place) {
-        places.add(place.trim());
-      }
-    });
-
-    cachedPlaces = places;
-    return places;
-  } catch (error) {
-    console.error('Error reading attractions database:', error);
-    return new Set();
-  }
+interface GoogleSuggestionResponse {
+  places?: GoogleSuggestionPlace[];
 }
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const query = searchParams.get('query');
+  const query = request.nextUrl.searchParams.get('query')?.trim() ?? '';
 
-  if (!query || query.length < 2) {
+  if (query.length < 2) {
     return NextResponse.json({ suggestions: [] });
   }
 
-  const places = getPlaces();
-  const lowerQuery = query.toLowerCase();
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ suggestions: [] });
+  }
 
-  const suggestions = Array.from(places)
-    .filter(place => place.toLowerCase().includes(lowerQuery))
-    .slice(0, 10) // Limit to 10 suggestions
-    .sort((a, b) => {
-      // Prioritize matches that start with the query
-      const aStartsWith = a.toLowerCase().startsWith(lowerQuery);
-      const bStartsWith = b.toLowerCase().startsWith(lowerQuery);
-      if (aStartsWith && !bStartsWith) return -1;
-      if (!aStartsWith && bStartsWith) return 1;
-      return a.localeCompare(b);
+  try {
+    const response = await fetch(PLACES_SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': FIELD_MASK
+      },
+      body: JSON.stringify({
+        textQuery: query,
+        languageCode: 'en'
+      })
     });
 
-  return NextResponse.json({ suggestions });
+    if (!response.ok) {
+      const details = await response.text();
+      console.error('Destination suggestion search failed:', response.status, details);
+      return NextResponse.json({ suggestions: [] });
+    }
+
+    const data = (await response.json()) as GoogleSuggestionResponse;
+    const suggestions = Array.from(
+      new Set(
+        (data.places ?? [])
+          .map((place) => {
+            const name = place.displayName?.text?.trim();
+            const address = place.formattedAddress?.trim();
+
+            if (!name) {
+              return null;
+            }
+
+            if (!address || address.toLowerCase() === name.toLowerCase()) {
+              return name;
+            }
+
+            return `${name}, ${address}`;
+          })
+          .filter((value): value is string => Boolean(value))
+      )
+    ).slice(0, 10);
+
+    return NextResponse.json({ suggestions });
+  } catch (error) {
+    console.error('Error fetching destination suggestions:', error);
+    return NextResponse.json({ suggestions: [] });
+  }
 }
